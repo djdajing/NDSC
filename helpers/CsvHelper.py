@@ -30,6 +30,10 @@ class CsvHelper:
             end = len(list(self.csv))
         self.label_headers= list(self.csv)[start-1:end]
 
+    def set_all_headers_as_label(self):
+        all_header_size = len(list(self.csv))
+        self.label_headers = list(self.csv)[3: all_header_size]
+
     def get_label_headers(self):
         return self.label_headers
 
@@ -39,11 +43,9 @@ class CsvHelper:
     def get_label_by_img_name(self,img_name):
         labels = []
         img_path = self.gen_img_path(img_name, self.category)
-        item_row =  self.csv[self.csv["image_path"]==img_path]
-
+        item_row = self.csv.loc[self.csv["image_path"]==img_path]
         for label in item_row :
             if label in self.label_headers:
-                print img_name," : ",item_row[label].values[0].item()
                 labels.append(item_row[label].values[0].item())#.value to get the numpynarray [0] to get the actaul value .item to convert it to native python type float
 
         return labels
