@@ -46,9 +46,7 @@ def pathiterator(dir, output_dir):
 		transform(img_full_path, output_dir)
 
 
-# for infile in sys.argv[1:]:
-#    print infile
-# pathiterator(infile,output_dir)
-in_dir = sys.argv[1]
-out_dir = sys.argv[2]
-pathiterator(in_dir, out_dir)
+def resize(in_dir,out_dir):
+	if not os.path.exists(out_dir):
+		os.makedirs(out_dir)
+	pathiterator(in_dir, out_dir)

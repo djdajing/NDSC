@@ -13,9 +13,11 @@ import tensorflow as tf
 
 
 class MobileNet:
+    brand_wanted_categories = ["Brand","Color Family"]
+
     @staticmethod
-    def build_screen_size_branch(inputs, numCategories,
-                              finalAct="softmax", chanDim=-1):
+    def brand_branch(inputs, numCategories,
+                     finalAct="softmax", chanDim=-1):
         # utilize a lambda layer to convert the 3 channel input to a
         # grayscale representation
         x = Lambda(lambda c: tf.image.rgb_to_grayscale(c))(inputs)
@@ -53,7 +55,7 @@ class MobileNet:
         x = BatchNormalization()(x)
         x = Dropout(0.5)(x)
         x = Dense(numCategories)(x)
-        x = Activation(finalAct, name="screen_size_output")(x)
+        x = Activation(finalAct, name="brand_output")(x)
 
         # return the category prediction sub-network
         return x
@@ -89,25 +91,28 @@ class MobileNet:
         x = BatchNormalization()(x)
         x = Dropout(0.5)(x)
         x = Dense(numColors)(x)
-        x = Activation(finalAct, name="color_output")(x)
+        x = Activation(finalAct, name="color_family_output")(x)
 
         # return the color prediction sub-network
         return x
 
     @staticmethod
-    def build(width, height, numCategories, numColors,
-              finalAct="softmax"):
+    def build(width, height,catclasscountmatch,finalAct="softmax"):
+        #use mobile nets variable to get
+        numCategories=catclasscountmatch[MobileNet.brand_wanted_categories[0]]
+        numColors = catclasscountmatch[MobileNet.brand_wanted_categories[1]]
+
         # initialize the input shape and channel dimension (this code
         # assumes you are using TensorFlow which utilizes channels
         # last ordering)
+
         inputShape = (height, width, 3)
         chanDim = -1
 
         # construct both the "category" and "color" sub-networks
         inputs = Input(shape=inputShape)
-        ScreenSizeBranch = MobileNet.build_screen_size_branch(inputs,numCategories, finalAct=finalAct, chanDim=chanDim)
-        colorBranch = MobileNet.build_color_branch(inputs,
-                                                    numColors, finalAct=finalAct, chanDim=chanDim)
+        ScreenSizeBranch = MobileNet.brand_branch(inputs, numCategories, finalAct=finalAct, chanDim=chanDim)
+        colorBranch = MobileNet.build_color_branch(inputs,numColors, finalAct=finalAct, chanDim=chanDim)
 
         # create the model using our input (the batch of images) and
         # two separate outputs -- one for the clothing category

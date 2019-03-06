@@ -12,7 +12,7 @@ IMAGE_PATH ="image_path"
 
 
 
-#python split-data.py /home/dj/NDSC/data/test_in /home/dj/NDSC/data/test_out /home/dj/NDSC/csvs/mobile_data_info_val_competition.csv
+#python dataSplitter.py /home/dj/NDSC/data/test_in /home/dj/NDSC/data/test_out /home/dj/NDSC/csvs/mobile_data_info_val_competition.csv
 
 
 def pathiterator(dir, out_dir):
@@ -46,25 +46,11 @@ def copy_images(column_series, in_dir, out_dir):
     print "Total count   :", success_count+failed_count," / ",row_count
 
 
-def check_path(path):
-    if not os.path.exists(path):
-        raise IOError("Path Does Not Exitst : "+path)
-    else:
-        return
-
-
-if __name__ == "__main__":
-
-    in_dir = sys.argv[1] #input path
-    out_dir = sys.argv[2] # outuput_path
-    csv_in_file = sys.argv[3] # csv path
-
-    check_path(in_dir)
-    check_path(out_dir)
-    check_path(csv_in_file)
+def split(in_dir,out_dir,csv):
+    if not os.path.exists(out_dir):
+        os.makedirs(out_dir)
 
     csv_helper = CsvHelper()
-    csv_helper.set_csv(csv_in_file)
+    csv_helper.set_csv(csv)
     image_paths_df=csv_helper.get_single_column(IMAGE_PATH)
-
     copy_images(image_paths_df, in_dir, out_dir)
