@@ -17,6 +17,8 @@ import pickle
 import cv2
 import os
 
+import const
+
 #constants
 EPOCHS= 3
 LR = 1e-3
@@ -116,8 +118,6 @@ def plot_loss(H, losses):
 
     # loop over the loss names
     for (i, l) in enumerate(lossNames):
-        print "i :",i
-        print "l :", l
         # plot the loss for both the training and validation data
         title = "Loss for {}".format(l) if l != "loss" else "Total loss"
         ax[i].set_title(title)
@@ -155,9 +155,30 @@ def category_classcount_match(wanted_categories):
     _cat_classcount_match_dict ={}
     index = 0
     for item in wanted_categories:
-        _cat_classcount_match_dict[item] = get_num_of_classes(wanted_categories,1)
+        print item,"NUMBER OF CLASS ",get_num_of_classes(wanted_categories,index)
+        _cat_classcount_match_dict[item] = get_num_of_classes(wanted_categories,index)
         index+=1
-    return  _cat_classcount_match_dict
+    return _cat_classcount_match_dict
+
+
+def get_wated_categories(category):
+    if category == const.MOBILE:
+        return const.mobile_wanted_categories
+    elif category == const.BEAUTY:
+        return const.beauty_wanted_categories
+    else:
+        return const.fashion_wanted_categories
+
+
+def gen_loss_dicts(wanted_categories_output):
+    # define two dictionaries: one that specifies the loss method for each output of the network
+    losses ={}
+    lossWeights={}
+    for item in wanted_categories_output:
+        losses[item]= "categorical_crossentropy"# specifies the weight per loss
+        lossWeights[item] = 1.0
+    return losses,lossWeights
+
 
 if __name__ == "__main__":
     image_dir, out_dir, category, csv_path =process_arg()
@@ -165,9 +186,8 @@ if __name__ == "__main__":
     label_header_list = get_label_headers(csv_helper, csv_path, category + "_image")
     data, all_labels = set_data_labels(image_dir, csv_helper)
 
-    '''NEED MANUAL '''
 
-    wanted_categories = ["Brand","Color Family"]
+    wanted_categories = get_wated_categories(category)
     wanted_categories_lower = gen_name(wanted_categories,to_add="")
     wanted_categories_output = gen_name(wanted_categories,to_add="_output")
     wanted_categories_loss = gen_name(wanted_categories,to_add="_output_loss")
@@ -178,36 +198,27 @@ if __name__ == "__main__":
     # binarize the labels
     binarized_labels_dict = binarizer(labels_to_use) #e.g. {"Brain ",(array_of_labels, number of classes)}
 
+    '''NEED MANUAL '''
 
-    # get labels and number of classes in the label
     brandLabels = get_binarised_lable(wanted_categories, 0)
-    #brandLabels_len = get_num_of_classes(wanted_categories, 0)
     colorLabels = get_binarised_lable(wanted_categories,1)
-    #colorLabels_len = get_num_of_classes(wanted_categories,1)
-
-    cat_classcount_match_dict = category_classcount_match(wanted_categories)
-
-
     #train , 20% for testing,random_state is the seed used by the random number generator;
     split = train_test_split(data, brandLabels, colorLabels, test_size=0.2, random_state=42)
     (trainX, testX, trainScreenSizeY, testScreenSizeY,trainColorY, testColorY) = split
 
+    '''END OF NEED MANUAL '''
 
+    cat_classcount_match_dict = category_classcount_match(wanted_categories)
     model= MobileNet.build(IMG_DIM, IMG_DIM, catclasscountmatch=cat_classcount_match_dict, finalAct="softmax")
 
-    # define two dictionaries: one that specifies the loss method for each output of the network
+    losses ,lossWeights = gen_loss_dicts(wanted_categories_output)
 
-    losses={
-            wanted_categories_output[0]: "categorical_crossentropy",
-            wanted_categories_output[1]: "categorical_crossentropy",
-            }
-    # specifies the weight per loss
-    lossWeights = {wanted_categories_output[0]: 1.0, wanted_categories_output[0]: 1.0}
-
-    # initialize the optimizer and compile the model
     print("[INFO] compiling model...")
     opt = Adam(lr=LR, decay=LR / EPOCHS)
     model.compile(optimizer=opt, loss=losses, loss_weights=lossWeights,metrics=["accuracy"])
+
+
+    '''NEED MANUAL '''
 
     # train the network to perform multi-output classification
     H = model.fit(trainX,
@@ -222,6 +233,8 @@ if __name__ == "__main__":
                                    }),
                   epochs=EPOCHS,
                   verbose=1)
+
+    '''END OF NEED MANUAL '''
 
     # save the model to disk
     print("[INFO] serializing network...")
