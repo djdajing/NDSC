@@ -1,23 +1,22 @@
 import sys
 import os
-sys.path.append(os.path.abspath('../helpers'))
+import argparse
+sys.path.append(os.path.abspath('../../helpers'))
+sys.path.append(os.path.abspath('..'))
 
-import sys
-from CsvHelper import CsvHelper
+# our imports
+from CsvHelper import CsvHelper # ignore unresolved reference error
+import const # ignore unresolved reference error
+from MobileNet import MobileNet
+
+#ml imports
 from keras.optimizers import Adam
 from keras.preprocessing.image import img_to_array
 from sklearn.model_selection import train_test_split
-from MobileNet import MobileNet
 from sklearn.preprocessing import LabelBinarizer
 import matplotlib.pyplot as plt
 import numpy as np
-import argparse
-import random
-import pickle
 import cv2
-import os
-
-import const
 
 #constants
 EPOCHS= 3
@@ -180,6 +179,13 @@ def gen_loss_dicts(wanted_categories_output):
     return losses,lossWeights
 
 
+def gen_y_parameter_for_fit(wanted_categories_output, labels):
+    y_dict= {}
+    for i in range (0, len(wanted_categories_output)):
+        y_dict[wanted_categories_output[i]] = labels[i]
+    return y_dict
+
+
 if __name__ == "__main__":
     image_dir, out_dir, category, csv_path =process_arg()
     csv_helper = CsvHelper()
@@ -198,13 +204,18 @@ if __name__ == "__main__":
     # binarize the labels
     binarized_labels_dict = binarizer(labels_to_use) #e.g. {"Brain ",(array_of_labels, number of classes)}
 
-    '''NEED MANUAL '''
+    '''NEED MANUAL'''
 
-    brandLabels = get_binarised_lable(wanted_categories, 0)
-    colorLabels = get_binarised_lable(wanted_categories,1)
-    #train , 20% for testing,random_state is the seed used by the random number generator;
+    # index is position of the categories in their respective wanted_categories list in const file
+    brandLabels = get_binarised_lable(wanted_categories, index=0)
+    colorLabels = get_binarised_lable(wanted_categories,index=1)
+
+    # train , 20% for testing,random_state is the seed used by the random number generator;
     split = train_test_split(data, brandLabels, colorLabels, test_size=0.2, random_state=42)
-    (trainX, testX, trainScreenSizeY, testScreenSizeY,trainColorY, testColorY) = split
+    (trainX, testX, trainBrandY, testBrandY, trainColorY, testColorY) = split
+
+    train_labels = [trainBrandY, trainColorY]
+    test_labels = [testBrandY, testColorY]
 
     '''END OF NEED MANUAL '''
 
@@ -217,24 +228,11 @@ if __name__ == "__main__":
     opt = Adam(lr=LR, decay=LR / EPOCHS)
     model.compile(optimizer=opt, loss=losses, loss_weights=lossWeights,metrics=["accuracy"])
 
-
-    '''NEED MANUAL '''
+    trainY = gen_y_parameter_for_fit(wanted_categories_output, train_labels)
+    testY = gen_y_parameter_for_fit(wanted_categories_output, test_labels)
 
     # train the network to perform multi-output classification
-    H = model.fit(trainX,
-                  {
-                      wanted_categories_output[0]: trainScreenSizeY,
-                      wanted_categories_output[1]: trainColorY
-                  },
-                  validation_data=(testX,
-                                   {
-                                       wanted_categories_output[0]: testScreenSizeY,
-                                       wanted_categories_output[1]:testColorY
-                                   }),
-                  epochs=EPOCHS,
-                  verbose=1)
-
-    '''END OF NEED MANUAL '''
+    H = model.fit(trainX,trainY,validation_data=(testX,testY),epochs=EPOCHS,verbose=1)
 
     # save the model to disk
     print("[INFO] serializing network...")

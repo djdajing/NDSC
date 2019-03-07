@@ -52,7 +52,5 @@ if __name__ == "__main__":
     test_output_folder_name = category + "_image_test"
     split_train_output_folder_path = out_dir + train_output_folder_name
     split_test_output_folder_path = out_dir + test_output_folder_name
-
-
     dataSplitter.split(resize_output_folder_path, split_test_output_folder_path, test_csv_path)
     dataSplitter.split(resize_output_folder_path, split_train_output_folder_path, train_csv_path)

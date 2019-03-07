@@ -30,6 +30,7 @@ def copy_image(file_name, in_dir_, out_dir_, success_count, failed_count):
     except IOError:
         failed_count+=1;
         print "Cannot copy file from "+ in_file_path+" to "+ out_file_path
+        exit(1)
     return success_count,failed_count
 
 def copy_images(column_series, in_dir, out_dir):
@@ -49,7 +50,9 @@ def copy_images(column_series, in_dir, out_dir):
 def split(in_dir,out_dir,csv):
     if not os.path.exists(out_dir):
         os.makedirs(out_dir)
+        print "created folder :",out_dir
     csv_helper = CsvHelper()
     csv_helper.set_csv(csv)
+    print "[INFO] using csv file : ",csv
     image_paths_df=csv_helper.get_single_column(IMAGE_PATH)
     copy_images(image_paths_df, in_dir, out_dir)
