@@ -7,7 +7,7 @@ from PIL import Image
 target_size =128
 fill_color =(0,0,0,0)
 
-def make_square(im, w, h, outfile):
+def make_square(im, w, h):
 	size_ = max(target_size, w, h)
 	new_im = Image.new('RGBX', (size_, size_), fill_color)
 	new_im.paste(im, (abs(size_ - w) / 2, abs(size_ - h) / 2))
@@ -26,12 +26,15 @@ def transform(input_path, out_dir):
 		outfile = os.path.join(out_dir, os.path.basename(input_path))
 		#print "outfile : " + outfile
 		im = Image.open(input_path)
+		im = im.convert('RGB')
 		w,h = im.size
-		if (w < target_size and w==h):
-			im =im.resize((w*2,w*2),Image.ANTIALIAS)
-			w,h =im.size
-		elif (w!=h):
-			im = make_square(im, w, h, outfile)
+
+		if (w < target_size or h < target_size): #if square and smaller than target size
+			im = im.resize((w*2,h*2),Image.ANTIALIAS) #double the image first
+			w,h = im.size
+		if (w!=h):
+			im = make_square(im, w, h)
+
 		im = im.resize((target_size,target_size),Image.ANTIALIAS)
 		check_size(im)
 		im.save(outfile, "JPEG")

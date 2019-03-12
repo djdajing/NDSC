@@ -36,7 +36,7 @@ if __name__ == "__main__":
     category = args["category"]
 
     check_path(in_dir)
-    check_path(out_dir)
+    #check_path(out_dir)
     check_path(csvs_folder_path)
 
     train_csv_path = csvs_folder_path + category + TRAIN

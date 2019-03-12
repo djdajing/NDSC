@@ -192,7 +192,6 @@ if __name__ == "__main__":
     label_header_list = get_label_headers(csv_helper, csv_path, category + "_image")
     data, all_labels = set_data_labels(image_dir, csv_helper)
 
-
     wanted_categories = get_wated_categories(category)
     wanted_categories_lower = gen_name(wanted_categories,to_add="")
     wanted_categories_output = gen_name(wanted_categories,to_add="_output")
