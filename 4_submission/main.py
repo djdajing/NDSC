@@ -4,12 +4,7 @@ sys.path.append(os.path.abspath('../helpers'))
 import Utilities as Utilities
 import const
 import pandas as pd
-"""
-TO RUN :
 
-python main.py -d /home/dj/NDSC/csvs/ -o /home/dj/NDSC/submission/ -c beauty
-
-"""
 
 
 def format_csv_to_submit(df_input, out_path):
@@ -27,6 +22,12 @@ def format_csv_to_submit(df_input, out_path):
     df_output.to_csv(out_path, index=False)
 
 
+"""
+TO RUN :
+
+python main.py -d /home/dj/NDSC/csvs/ -o /home/dj/NDSC/submission/ -c beauty
+
+"""
 if __name__ == "__main__":
     args = Utilities.process_arg()
     csvs_folder_path= args["csvdir"]
