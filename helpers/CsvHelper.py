@@ -16,6 +16,11 @@ class CsvHelper:
     def get_csv(self):
         return self.csv
 
+    def add_column(self,column_name):
+        if column_name in self.csv.columns: #if column exist, remove
+            self.csv = self.csv.drop(column_name,axis=1)
+        self.csv[column_name]=""
+
     def set_csv(self,csv_path):
         self.csv = pd.read_csv(csv_path, index_col=None)
 
@@ -24,6 +29,9 @@ class CsvHelper:
 
     def get_id_title_and_single_column(self, header):
         return self.csv.dropna(subset=[header])[['itemid','title',header]]
+
+    def get_id_title(self):
+        return self.csv[['itemid', 'title']]
 
     def get_header(self):
         return list(self.csv)

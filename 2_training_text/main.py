@@ -11,7 +11,6 @@ import const
 from DataObj import DataObj
 import numpy as np
 
-
 #Training imports
 from sklearn.linear_model import SGDClassifier
 from sklearn.pipeline import Pipeline
@@ -47,8 +46,17 @@ def get_top_1_arr(classes,predicted_multiclass,val_data):
 
 
 
+"""
+TO RUN :
+
+python main.py -i /home/dj/NDSC/new_data/beauty/beauty_image/ -o /home/dj/NDSC/models/ -c beauty -d /home/dj/NDSC/csvs/ -save true
+
+if arguement -save true, it will save model into -o folder with format refer to "Utilites" "construct_filepath" function 
+
+"""
 
 if __name__ == "__main__":
+
     save_model =False
     args = Utilities.process_arg("-save")
     in_dir = args["inputdataset"]
@@ -56,44 +64,46 @@ if __name__ == "__main__":
     csvs_folder_path= args["csvdir"]
     category = args["category"]
     save =args["save"]
+
     if (save == "t" or save == "T" or save == "true"):
         save_model=True
 
     train_csv_path = csvs_folder_path + category + const.TRAIN
 
-    print train_csv_path
     csv_helper = CsvHelper()
-    csv_helper.set_csv(train_csv_path)
+    csv_helper.set_csv(train_csv_path) # set csv file as train_csv_path
 
-    label= "Product_texture"
+    label= "Brand" #the column to be trained on
 
-    df = csv_helper.get_id_title_and_single_column(label)
+    df = csv_helper.get_id_title_and_single_column(label) # get id, title, and label column
+
     X = df["title"]
     y = df[label]
 
-    #get all
-    y_unqiue = y.unique()
-    targets_str = [str(i) for i in y_unqiue]
-    targets_float = [float(i) for i in y_unqiue]
+    # pre-training
+    y_unqiue = y.unique() # get a list of labels
+    targets_str = [str(i) for i in y_unqiue] #string verison of y_unique
+    targets_float = [float(i) for i in y_unqiue] # float version of y-unqiue
 
+    # data splitting for trainig and testing
+    # This part need to look at how to make it into cross validation
     X_train, X_val, y_train, y_val = train_test_split(X, y, test_size=0.5, random_state=42)
     train = make_obj_dataobj(X_train, y_train)
     val = make_obj_dataobj(X_val, y_val)
 
-    #training
+    # training
     text_clf_svm = Pipeline([('vect', CountVectorizer()), ('tfidf', TfidfTransformer()),
                              ('clf-svm', SGDClassifier(loss='modified_huber', penalty='l2', alpha=1e-3, n_iter=5,
                                                        random_state=42))])
     text_clf_svm = text_clf_svm.fit(train.data,train.target)
 
+    # make prediction
     predicted_multiclass = text_clf_svm.predict_proba(val.data)
+    pred_top1 = get_top_1_arr(text_clf_svm.classes_, predicted_multiclass,val.data) #get top 1 for evaluation
+    matrix_report_void(val.target, pred_top1, targets_str, targets_float) #evaluation
 
-    pred_top1 = get_top_1_arr(text_clf_svm.classes_, predicted_multiclass,val.data)
-
-    matrix_report_void(val.target, pred_top1, targets_str, targets_float)
-
+    # Saving model
     if save_model:
-       # saving_fileName =category+"_"+label+".model"
         saving_path =Utilities.construct_filepath(out_dir, [category,label], ".model")
         pickle.dump(text_clf_svm,open(saving_path,'wb'))
 
