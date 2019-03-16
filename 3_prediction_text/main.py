@@ -7,7 +7,7 @@ import const
 from DataObj import DataObj
 import numpy as np
 import pickle
-
+import os
 
 def get_top_2_dict(classes, predicted_multiclass,id_df):
     preds_idx_ = np.argsort(predicted_multiclass, axis=1) #get position of lowest to higherst scroe
@@ -35,7 +35,7 @@ def get_top_classes(top2_list):
     return predicted_classes_str
 
 
-def write_to_csv(pred_top2,test_df):
+def write_to_csv(pred_top2,test_df,test_csv_path):
     # Write to csv
     for id, top2_list in pred_top2.items():
         target_str = get_top_classes(top2_list) # function to decide what class to keep
@@ -43,22 +43,31 @@ def write_to_csv(pred_top2,test_df):
         test_df.loc[idx,label]= target_str # use id to find the correct row and insert string
     test_df.to_csv(test_csv_path,index=False)
 
+
+def get_labels(model_dir):
+    fnames =[]
+    label_list =[]
+    for (dirpath,dirname,fname) in os.walk(model_dir):
+        fnames.extend(fname)
+
+    for fname in fnames :
+        label_list.append(fname.split("_",1)[1].split(".",-1)[0])
+    return label_list
 """
+This script will take in all models in -i parameter and append predictions by each model to "val_competition file" . this val_competition file wil be used by submission module to turn into submission format
+
 TO RUN :
 
-python main.py -i /home/dj/NDSC/models/ -c beauty -d /home/dj/NDSC/csvs/
+python main.py -i /home/dj/NDSC/models/beauty -c beauty -d /home/dj/NDSC/csvs/
+
+-i : folder where models are found (place models of the same caterory in the same folder)
+-c : category we are looking at now 
+-d : folder to all the csv files
 
 """
 
-if __name__ == "__main__":
+def do_predict(label,category,csvs_folder_path):
 
-    args = Utilities.process_arg()
-    in_dir = args["inputdataset"]
-    csvs_folder_path= args["csvdir"]
-    category = args["category"]
-
-    # get model for "label"
-    label = "Brand"
     model_path = Utilities.construct_filepath(in_dir,[category,label],".model")
     text_clf_svm = pickle.load(open(model_path,"rb"))
 
@@ -76,8 +85,18 @@ if __name__ == "__main__":
     pred_top2 = get_top_2_dict(text_clf_svm.classes_, predicted_multiclass,id_df)
 
     # write back to csv
-    write_to_csv(pred_top2, test_df) # top 2 is the top 2 predicted test_df is the original csv
+    write_to_csv(pred_top2, test_df,test_csv_path) # top 2 is the top 2 predicted test_df is the original csv
 
+if __name__ == "__main__":
 
+    args = Utilities.process_arg()
+    in_dir = args["inputdataset"]
+    csvs_folder_path= args["csvdir"]
+    category = args["category"]
+
+    labels = get_labels(in_dir)
+
+    for label in labels:
+        do_predict(label, category, csvs_folder_path)
 
 
