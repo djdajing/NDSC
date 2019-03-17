@@ -1,7 +1,7 @@
 from sklearn.model_selection import train_test_split
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.metrics import accuracy_score,f1_score,precision_score,recall_score
-from sklearn.model_selection import StratifiedShuffleSplit
+from sklearn.model_selection import StratifiedShuffleSplit,GridSearchCV,StratifiedKFold
 
 import sys
 import os
@@ -36,8 +36,6 @@ def matrix_report_void(ground_truth, target_predicted_top1, targets_str, targets
 
 
 def split_data_stratified(X, y):
-    print "in"
-    print type(X),type(y)
     #split by proportion
     sssplit = StratifiedShuffleSplit(n_splits=1,test_size=0.2,random_state=1)
     for train_index , test_index in sssplit.split(X,y):
@@ -62,42 +60,103 @@ def get_top_1_arr(classes,predicted_multiclass,val_data):
 
 def do_training(label,csv_helper,save_model):
 
-    print "TRAINING MODEL : ",label
+    print "========  TRAINING MODEL : ",label,"========"
+
 
     df = csv_helper.get_id_title_and_single_column(label) # get id, title, and label column
 
     X = df["title"]
     y = df[label]
+    skf=StratifiedKFold(n_splits= 10,shuffle = True,random_state=42)
 
-    # pre-training
-    y_unqiue = y.unique() # get a list of labels
-    targets_str = [str(i) for i in y_unqiue] #string verison of y_unique
-    targets_float = [float(i) for i in y_unqiue] # float version of y-unqiue
+    # Pipeline item
+    cv = CountVectorizer() # make into bag of words
+    tfidf = TfidfTransformer() # apply tfidf
+    svm = SGDClassifier(penalty='l2',loss='modified_huber')
 
-    X_train, X_val, y_train, y_val  = split_data_stratified(X.values, y.values)
-
-    print "Train sample:", X_train.shape,y_train.shape
-    print "Test sample:", X_val.shape,y_val.shape
-
-    train = make_obj_dataobj(X_train, y_train)
-    val = make_obj_dataobj(X_val, y_val)
+    parameters ={
+        'cv__stop_words':('english',None),
+        'cv__max_df':(0.8,0.9,0.85),
+        'tfidf__use_idf':(True, False),
+        'svm__alpha':(1e-3,1e-4),
+        'svm__max_iter':(5000,10000),
+        'svm__tol':(1e-4,1e-3)
+    }
 
     # training
-    text_clf_svm = Pipeline([('vect', CountVectorizer()),
-                             ('tfidf', TfidfTransformer()),
-                             ('clf-svm', SGDClassifier(loss='modified_huber', penalty='l2', alpha=1e-4, max_iter=5000,tol=1e-4))
-                             ])
-    text_clf_svm = text_clf_svm.fit(train.data,train.target)
+    text_clf_svm = Pipeline([('cv', cv), ('tfidf', tfidf), ('svm', svm)])
+    gs_clf = GridSearchCV(text_clf_svm,parameters,n_jobs=-1,cv=skf.split(X,y),scoring='f1_micro')
 
-    # make prediction
-    predicted_multiclass = text_clf_svm.predict_proba(val.data)
-    pred_top1 = get_top_1_arr(text_clf_svm.classes_, predicted_multiclass,val.data) #get top 1 for evaluation
-    matrix_report_void(val.target, pred_top1, targets_str, targets_float) #evaluation
+    gs_clf = gs_clf.fit(X,y)
+
+    print "Best Parameter : ",gs_clf.best_params_
+    print "F1 Score : ",gs_clf.best_score_
+
+    print "============================================"
 
     # Saving model
     if save_model:
         saving_path =Utilities.construct_filepath(out_dir, [category,label], ".model")
         #pickle.dump(text_clf_svm,open(saving_path,'wb'))
+
+
+# def do_training(label,csv_helper,save_model):
+#
+#     print "TRAINING MODEL : ",label
+#
+#     df = csv_helper.get_id_title_and_single_column(label) # get id, title, and label column
+#
+#     X = df["title"]
+#     y = df[label]
+#
+#     # pre-training
+#     y_unqiue = y.unique() # get a list of labels
+#     targets_str = [str(i) for i in y_unqiue] #string verison of y_unique
+#     targets_float = [float(i) for i in y_unqiue] # float version of y-unqiue
+#
+#     #X_train, X_val, y_train, y_val  = split_data_stratified(X.values, y.values)
+#
+#     #print "Train sample:", X_train.shape,y_train.shape
+#     #print "Test sample:", X_val.shape,y_val.shape
+#
+#     #train = make_obj_dataobj(X_train, y_train)
+#     #val = make_obj_dataobj(X_val, y_val)
+#
+#     skf=StratifiedKFold(n_splits= 10,shuffle = True,random_state=42)
+#
+#     # Pipeline item
+#     cv = CountVectorizer() # make into bag of words
+#     tfidf= TfidfTransformer()
+#     svm =SGDClassifier(penalty='l2',loss='modified_huber')
+#
+#     parameters ={
+#         'cv__stop_words':('english',None),
+#         'cv__max_df':(0.8,0.9,0.85),
+#         'tfidf__use_idf':(True, False),
+#         'svm__alpha':(1e-3,1e-4),
+#         'svm__max_iter':(5000,10000),
+#         'svm__tol':(1e-4,1e-3)
+#     }
+#
+#     # training
+#     text_clf_svm = Pipeline([('cv', cv), ('tfidf', tfidf), ('svm', svm)])
+#     gs_clf = GridSearchCV(text_clf_svm,parameters,n_jobs=-1,cv=skf.split(X,y),scoring='f1_micro')
+#
+#     gs_clf = gs_clf.fit(X,y)
+#
+#     print gs_clf.best_score_
+#
+#     #text_clf_svm=text_clf_svm.set_params(**gs_clf.best_params_)
+#
+#     # make prediction
+#     #predicted_multiclass = gs_clf.best_estimator_.predict_proba(val.data)
+#     #pred_top1 = get_top_1_arr(gs_clf.classes_, predicted_multiclass,val.data) #get top 1 for evaluation
+#     #matrix_report_void(val.target, pred_top1, targets_str, targets_float) #evaluation
+#
+#     # Saving model
+#     if save_model:
+#         saving_path =Utilities.construct_filepath(out_dir, [category,label], ".model")
+#         #pickle.dump(text_clf_svm,open(saving_path,'wb'))
 
 """
 TO RUN :
