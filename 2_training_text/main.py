@@ -14,7 +14,8 @@ import numpy as np
 
 #Training imports
 from sklearn.linear_model import SGDClassifier
-from sklearn.pipeline import Pipeline
+#from sklearn.pipeline import Pipeline
+from imblearn.pipeline import Pipeline
 from sklearn.feature_extraction.text import TfidfTransformer
 from sklearn.metrics import classification_report
 import pickle
@@ -58,46 +59,64 @@ def get_top_1_arr(classes,predicted_multiclass,val_data):
     return pred_top1
 
 
-def do_training(label,csv_helper,save_model):
-
-    print "========  TRAINING MODEL : ",label,"========"
-
-
-    df = csv_helper.get_id_title_and_single_column(label) # get id, title, and label column
-
-    X = df["title"]
-    y = df[label]
-    skf=StratifiedKFold(n_splits= 10,shuffle = True,random_state=42)
-
+def _train(X,y):
+    y_unique = y.unique()
+    print "unique : ", y_unique
+    skf = StratifiedKFold(n_splits=10, shuffle=True, random_state=42)
+    from imblearn.over_sampling import SMOTE
     # Pipeline item
-    cv = CountVectorizer() # make into bag of words
-    tfidf = TfidfTransformer() # apply tfidf
-    svm = SGDClassifier(penalty='l2',loss='modified_huber')
+    cv = CountVectorizer()  # make into bag of words
+    tfidf = TfidfTransformer()  # apply tfidf
+    upsampling =  SMOTE(k_neighbors=1)
+    svm = SGDClassifier(penalty='l2', loss='modified_huber')
 
-    parameters ={
-        'cv__stop_words':('english',None),
-        'cv__max_df':(0.8,0.9,0.85),
-        'tfidf__use_idf':(True, False),
-        'svm__alpha':(1e-3,1e-4),
-        'svm__max_iter':(5000,10000),
-        'svm__tol':(1e-4,1e-3)
+    parameters = {
+        'cv__stop_words': ('english', None),
+        'cv__max_df': (0.8, 0.9, 0.85),
+        'tfidf__use_idf': (True, False),
+        'svm__alpha': (1e-3, 1e-4),
+        'svm__max_iter': (5000, 10000),
+        'svm__tol': (1e-4, 1e-3)
     }
 
     # training
-    text_clf_svm = Pipeline([('cv', cv), ('tfidf', tfidf), ('svm', svm)])
-    gs_clf = GridSearchCV(text_clf_svm,parameters,n_jobs=-1,cv=skf.split(X,y),scoring='f1_micro')
+    text_clf_svm = Pipeline([('cv', cv), ('tfidf', tfidf), ('upsampling',upsampling),('svm', svm)])
+    gs_clf = GridSearchCV(text_clf_svm, parameters, n_jobs=-1, cv=skf.split(X, y), scoring='f1_micro')
 
-    gs_clf = gs_clf.fit(X,y)
+    gs_clf = gs_clf.fit(X, y)
 
-    print "Best Parameter : ",gs_clf.best_params_
-    print "F1 Score : ",gs_clf.best_score_
+    print "Best Parameter : ", gs_clf.best_params_
+    print "F1 Score : ", gs_clf.best_score_
 
     print "============================================"
 
     # Saving model
     if save_model:
-        saving_path =Utilities.construct_filepath(out_dir, [category,label], ".model")
-        #pickle.dump(text_clf_svm,open(saving_path,'wb'))
+        saving_path = Utilities.construct_filepath(out_dir, [category, label], ".model")
+        # pickle.dump(text_clf_svm,open(saving_path,'wb'))
+
+
+def _proprocess(df,label,X,y):
+
+    target_cout = df[label].value_counts().to_frame()
+    #print target_cout
+    from imblearn.over_sampling import RandomOverSampler
+    smote = RandomOverSampler(random_state=15)
+    X_,y_ = smote.fit_sample(X,y)
+    print type(X),type(y)
+
+def do_training(label,csv_helper,save_model):
+
+    print "========  TRAINING MODEL : ",label,"========"
+
+    df = csv_helper.get_id_title_and_single_column(label) # get id, title, and label column
+
+    X = df["title"]
+    y = df[label]
+    #_proprocess(df, label,X,y)
+
+    _train(X,y)
+
 
 
 # def do_training(label,csv_helper,save_model):
