@@ -30,6 +30,9 @@ class CsvHelper:
     def get_id_title_and_single_column(self, header):
         return self.csv.dropna(subset=[header])[['itemid','title',header]]
 
+    def get_title_and_single_column(self, header):
+        return self.csv.dropna(subset=[header])[['title',header]]
+
     def get_id_title(self):
         return self.csv[['itemid', 'title']]
 

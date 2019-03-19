@@ -59,24 +59,24 @@ def get_top_1_arr(classes,predicted_multiclass,val_data):
     return pred_top1
 
 
-def _train(X,y):
-    y_unique = y.unique()
-    print "unique : ", y_unique
+def _train(X,y,save_model):
+    #print y.value_counts()
+    #min_sample = min(y.value_counts())
+    #print "min : ",min_sample
     skf = StratifiedKFold(n_splits=10, shuffle=True, random_state=42)
     from imblearn.over_sampling import SMOTE
     # Pipeline item
     cv = CountVectorizer()  # make into bag of words
-    tfidf = TfidfTransformer()  # apply tfidf
-    upsampling =  SMOTE(k_neighbors=1)
+    tfidf = TfidfTransformer(use_idf=True)  # apply tfidf
+    upsampling =  SMOTE(k_neighbors=9)
     svm = SGDClassifier(penalty='l2', loss='modified_huber')
 
     parameters = {
-        'cv__stop_words': ('english', None),
-        'cv__max_df': (0.8, 0.9, 0.85),
-        'tfidf__use_idf': (True, False),
-        'svm__alpha': (1e-3, 1e-4),
-        'svm__max_iter': (5000, 10000),
-        'svm__tol': (1e-4, 1e-3)
+        'cv__stop_words': ('english', None), # remove stopwords or not
+        'cv__max_df': (0.8, 0.9, 0.85,0.95), # if a word apper more than x*10% then ignore
+        'svm__alpha': (1e-3, 1e-4), #learning rate
+        'svm__max_iter': (5000, 10000), # max iteration
+        'svm__tol': (1e-4, 1e-3,1e-2) # when to stop
     }
 
     # training
@@ -93,94 +93,47 @@ def _train(X,y):
     # Saving model
     if save_model:
         saving_path = Utilities.construct_filepath(out_dir, [category, label], ".model")
-        # pickle.dump(text_clf_svm,open(saving_path,'wb'))
+        pickle.dump(gs_clf.best_estimator_,open(saving_path,'wb'))
 
 
-def _proprocess(df,label,X,y):
+def remove_class_less_than_20(y):
+    LIMIT =20
+    target_cout = y.value_counts()
+    to_remove =[]
 
-    target_cout = df[label].value_counts().to_frame()
-    #print target_cout
-    from imblearn.over_sampling import RandomOverSampler
-    smote = RandomOverSampler(random_state=15)
-    X_,y_ = smote.fit_sample(X,y)
-    print type(X),type(y)
+    for i in range (len(target_cout.values)):
+        class_size = target_cout.values[i]
+        class_name = target_cout.index[i]
+        if class_size<=50:
+            print "CLASSS",class_name,"ONLY HAS SIZE",class_size
+        if class_size <LIMIT:
+            to_remove.append(class_name)
+    return to_remove
 
 def do_training(label,csv_helper,save_model):
 
     print "========  TRAINING MODEL : ",label,"========"
 
-    df = csv_helper.get_id_title_and_single_column(label) # get id, title, and label column
+    df = csv_helper.get_title_and_single_column(label) # get id, title, and label column
+
+    classes_to_remove = remove_class_less_than_20(df[label])
+
+    for class_name in classes_to_remove:
+        df = df[df[label] != class_name]
+
+    print "Removed",len(classes_to_remove),"classes, training",len(df[label].value_counts()),"classes"
 
     X = df["title"]
     y = df[label]
-    #_proprocess(df, label,X,y)
 
-    _train(X,y)
-
+    _train(X,y,save_model)
 
 
-# def do_training(label,csv_helper,save_model):
-#
-#     print "TRAINING MODEL : ",label
-#
-#     df = csv_helper.get_id_title_and_single_column(label) # get id, title, and label column
-#
-#     X = df["title"]
-#     y = df[label]
-#
-#     # pre-training
-#     y_unqiue = y.unique() # get a list of labels
-#     targets_str = [str(i) for i in y_unqiue] #string verison of y_unique
-#     targets_float = [float(i) for i in y_unqiue] # float version of y-unqiue
-#
-#     #X_train, X_val, y_train, y_val  = split_data_stratified(X.values, y.values)
-#
-#     #print "Train sample:", X_train.shape,y_train.shape
-#     #print "Test sample:", X_val.shape,y_val.shape
-#
-#     #train = make_obj_dataobj(X_train, y_train)
-#     #val = make_obj_dataobj(X_val, y_val)
-#
-#     skf=StratifiedKFold(n_splits= 10,shuffle = True,random_state=42)
-#
-#     # Pipeline item
-#     cv = CountVectorizer() # make into bag of words
-#     tfidf= TfidfTransformer()
-#     svm =SGDClassifier(penalty='l2',loss='modified_huber')
-#
-#     parameters ={
-#         'cv__stop_words':('english',None),
-#         'cv__max_df':(0.8,0.9,0.85),
-#         'tfidf__use_idf':(True, False),
-#         'svm__alpha':(1e-3,1e-4),
-#         'svm__max_iter':(5000,10000),
-#         'svm__tol':(1e-4,1e-3)
-#     }
-#
-#     # training
-#     text_clf_svm = Pipeline([('cv', cv), ('tfidf', tfidf), ('svm', svm)])
-#     gs_clf = GridSearchCV(text_clf_svm,parameters,n_jobs=-1,cv=skf.split(X,y),scoring='f1_micro')
-#
-#     gs_clf = gs_clf.fit(X,y)
-#
-#     print gs_clf.best_score_
-#
-#     #text_clf_svm=text_clf_svm.set_params(**gs_clf.best_params_)
-#
-#     # make prediction
-#     #predicted_multiclass = gs_clf.best_estimator_.predict_proba(val.data)
-#     #pred_top1 = get_top_1_arr(gs_clf.classes_, predicted_multiclass,val.data) #get top 1 for evaluation
-#     #matrix_report_void(val.target, pred_top1, targets_str, targets_float) #evaluation
-#
-#     # Saving model
-#     if save_model:
-#         saving_path =Utilities.construct_filepath(out_dir, [category,label], ".model")
-#         #pickle.dump(text_clf_svm,open(saving_path,'wb'))
 
 """
 TO RUN :
 
-python main.py  -o /home/dj/NDSC/models/ -c beauty -d /home/dj/NDSC/csvs/ -save true
+python main.py  -o /home/dj/NDSC/models/ -c beauty -d /home/dj/NDSC/csvs2/ -save true
 
 if arguement -save true, it will save model into -o folder with format refer to "Utilites" "construct_filepath" function 
 
@@ -202,16 +155,16 @@ if __name__ == "__main__":
 
     csv_helper = CsvHelper()
     csv_helper.set_csv(train_csv_path) # set csv file as train_csv_path
-
+    print "Set csv done"
     '''
     This part is for mass training like for each attribute/ label just train a model 
     for individual model tuning, set labels with a single label , like like 123
     '''
     csv_helper.set_all_headers_as_label() # set all the labels as label headers
     labels = csv_helper.get_label_headers() # get lables i.e all column name besides image name, itemid and title
-    labels = ["Camera"] # just doing
+    #labels = ["Colour_group"] # just doing
+    print labels
     for label in labels:
-        print label
         do_training(label,csv_helper,save_model)
 
 

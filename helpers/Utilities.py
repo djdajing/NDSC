@@ -10,7 +10,6 @@ def process_arg(addarg=None):
     ap.add_argument("-c", "--category", required=False,help="state category")
     ap.add_argument("-d", "--csvdir", required=False,help="state csvdir")
     if addarg:
-        print "added arg",addarg
         ap.add_argument(addarg,required=False)
 
 
