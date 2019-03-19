@@ -104,7 +104,7 @@ def remove_class_less_than_20(y):
     for i in range (len(target_cout.values)):
         class_size = target_cout.values[i]
         class_name = target_cout.index[i]
-        if class_size<=50:
+        if 20<class_size<=50:
             print "CLASSS",class_name,"ONLY HAS SIZE",class_size
         if class_size <LIMIT:
             to_remove.append(class_name)
@@ -163,7 +163,7 @@ if __name__ == "__main__":
     csv_helper.set_all_headers_as_label() # set all the labels as label headers
     labels = csv_helper.get_label_headers() # get lables i.e all column name besides image name, itemid and title
     #labels = ["Colour_group"] # just doing
-    print labels
+    print "Predicting These classes : ", labels
     for label in labels:
         do_training(label,csv_helper,save_model)
 
