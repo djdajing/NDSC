@@ -80,7 +80,8 @@ def _train(X,y,save_model):
     }
 
     # training
-    text_clf_svm = Pipeline([('cv', cv), ('tfidf', tfidf), ('upsampling',upsampling),('svm', svm)])
+    #text_clf_svm = Pipeline([('cv', cv), ('tfidf', tfidf), ('upsampling', upsampling), ('svm', svm)])
+    text_clf_svm = Pipeline([('cv', cv), ('tfidf', tfidf),('svm', svm)])
     gs_clf = GridSearchCV(text_clf_svm, parameters, n_jobs=-1, cv=skf.split(X, y), scoring='f1_micro')
 
     gs_clf = gs_clf.fit(X, y)
