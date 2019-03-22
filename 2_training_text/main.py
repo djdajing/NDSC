@@ -163,7 +163,7 @@ if __name__ == "__main__":
     '''
     csv_helper.set_all_headers_as_label() # set all the labels as label headers
     labels = csv_helper.get_label_headers() # get lables i.e all column name besides image name, itemid and title
-    #labels = ["Colour_group"] # just doing
+    labels = ["Clothing Material","Sleeves"] # just doing
     print "Predicting These classes : ", labels
     for label in labels:
         do_training(label,csv_helper,save_model)
