@@ -53,18 +53,7 @@ def get_labels(model_dir):
     for fname in fnames :
         label_list.append(fname.split("_",1)[1].split(".",-1)[0])
     return label_list
-"""
-This script will take in all models in -i parameter and append predictions by each model to "val_competition file" . this val_competition file wil be used by submission module to turn into submission format
 
-TO RUN :
-
-python main.py -i /home/dj/NDSC/models/beauty -c beauty -d /home/dj/NDSC/csvs/
-
--i : folder where models are found (place models of the same caterory in the same folder)
--c : category we are looking at now 
--d : folder to all the csv files
-
-"""
 
 def do_predict(label,category,csvs_folder_path):
 
@@ -86,6 +75,20 @@ def do_predict(label,category,csvs_folder_path):
 
     # write back to csv
     write_to_csv(pred_top2, test_df,test_csv_path) # top 2 is the top 2 predicted test_df is the original csv
+
+
+"""
+This script will take in all models in -i parameter and append predictions by each model to "val_competition file" . this val_competition file wil be used by submission module to turn into submission format
+
+TO RUN :
+
+python main.py -i /home/dj/NDSC/models/beauty -c beauty -d /home/dj/NDSC/csvs/
+
+-i : folder where models are found (place models of the same caterory in the same folder)
+-c : category we are looking at now 
+-d : folder to all the csv files
+
+"""
 
 if __name__ == "__main__":
 
