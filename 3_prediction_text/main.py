@@ -82,7 +82,7 @@ This script will take in all models in -i parameter and append predictions by ea
 
 TO RUN :
 
-python main.py -i /home/dj/NDSC/models/beauty -c beauty -d /home/dj/NDSC/csvs/
+python main.py -i /home/dj/NDSC/models/fashion/ -c fashion -d /home/dj/NDSC/csvs2/kaggle/
 
 -i : folder where models are found (place models of the same caterory in the same folder)
 -c : category we are looking at now 
