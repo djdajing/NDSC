@@ -18,12 +18,10 @@ FillAttribute.py fills empty attribute columns by matching keywords on title col
 noDupTitleExt.py removes identical entries in the csv file 
 * input : csv file 
 * output : csv file
-* command : python noDupTitleExt.py 
+* command : ```python noDupTitleExt.py```
 			
 ### 2_training_images (unfinished due to limit in computing power)
-consist of 3 sub folders where each folder consist of 
-* 1. train.py : main image training body 
-* 2. design for each CNN 
+consist of 3 sub folders where each folder consist of (1) train.py : main image training body (2) design for each CNN 
 * input : folder of images 
 * command : ```python train.py -i /home/dj/NDSC/data/mobile/mobile_sample/ -o /home/dj/NDSC/data/mobile/ -c mobile -d /home/dj/NDSC/data/mobile/```
 
